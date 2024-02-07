@@ -9,10 +9,8 @@ on:
       - master
 
 jobs:
-  lint:
-    name: Lint Code
+  build_and_test:
     runs-on: ubuntu-20.04
-
     steps:
     - name: Check Out Repository
       uses: actions/checkout@v3
@@ -20,7 +18,10 @@ jobs:
     - name: Set Up Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: 16 
+        node-version: 16
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Install Dependencies
       run: npm install  
@@ -40,3 +41,35 @@ jobs:
         command: npm run test:e2e
         start: npm run start-prod
         wait-on: http://localhost:5000
+
+    - name: Deploy to Production
+      if: >
+        github.event_name == 'push' &&
+        github.ref == 'refs/heads/master' &&
+        !contains(join(github.event.commits, '\n'), '#skip')
+      run: echo "npm run start-prod"
+
+    - name: Bump version and push tag
+      if: >
+        github.event_name == 'push' &&
+        github.ref == 'refs/heads/master' &&
+        !contains(join(github.event.commits.*.message, '\n'), '#skip')
+      
+      uses: anothrNick/github-tag-action@1.64.0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        WITH_V: "true"
+        DEFAULT_BUMP: patch
+        DRY_RUN: "false"
+
+  notify_failure:
+    runs-on: ubuntu-20.04
+    needs: build_and_test
+    if: failure()
+    steps:
+      - name: Failure Notification
+        uses: appleboy/discord-action@master
+        with:
+          webhook_id: ${{ secrets.DISCORD_WEBHOOK_ID }}
+          webhook_token: ${{ secrets.DISCORD_WEBHOOK_TOKEN }}
+          message: "Build or deployment failed! Check GitHub Actions for more details."
