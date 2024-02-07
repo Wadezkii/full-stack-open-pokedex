@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - master 
+  pull_request:
+    branches:
+      - master
 
 jobs:
   lint:
@@ -30,3 +33,10 @@ jobs:
 
     - name: Run Tests
       run: npm test
+
+    - name: e2e Tests
+      uses: cypress-io/github-action@v5
+      with:
+        command: npm run test:e2e
+        start: npm run start-prod
+        wait-on: http://localhost:5000
