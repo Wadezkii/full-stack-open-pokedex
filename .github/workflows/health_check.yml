@@ -4,7 +4,7 @@ on: push
 
 jobs:
   health_check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest 
     steps:
     - name: Check Application Health
       uses: fjogeleit/http-request-action@v1.8.0
